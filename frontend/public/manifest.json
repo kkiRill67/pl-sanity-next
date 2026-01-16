@@ -1,0 +1,49 @@
+{
+  "name": "Body Metrics",
+  "short_name": "BodyMetrics",
+  "description": "Body Metrics - ваш путеводитель в мире здорового питания, похудения, тренировок и спортивных показателей",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#00d4aa",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "health",
+    "fitness",
+    "lifestyle"
+  ],
+  "lang": "ru-RU",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "shortcuts": [
+    {
+      "name": "Рецепты",
+      "short_name": "Рецепты",
+      "description": "Посмотреть здоровые рецепты",
+      "url": "/food",
+      "icons": [
+        {
+          "src": "/favicon.ico",
+          "sizes": "64x64",
+          "type": "image/x-icon"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+# Override for local development
+# This file is automatically loaded by docker-compose when running locally
+version: "3.8"
+
+services:
+  app:
+    build:
+      target: builder  # Use builder stage for development (includes dev dependencies)
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+      - /app/frontend/.next
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+    command: npm run dev
+    restart: unless-stopped

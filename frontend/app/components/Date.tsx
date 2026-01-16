@@ -1,13 +1,14 @@
-import {format} from 'date-fns'
+import { parseISO, format } from 'date-fns'
 
-export default function DateComponent({dateString}: {dateString: string | undefined}) {
+interface DateProps {
+  dateString?: string
+}
+
+export default function DateComponent({ dateString }: DateProps) {
   if (!dateString) {
     return null
   }
 
-  return (
-    <time dateTime={dateString} className="">
-      {format(new Date(dateString), 'LLLL	d, yyyy')}
-    </time>
-  )
+  const date = parseISO(dateString)
+  return <time dateTime={dateString}>{format(date, 'MMM yyyy')}</time>
 }

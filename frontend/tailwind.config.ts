@@ -6,15 +6,26 @@ export default {
   theme: {
     container: {
       center: true,
-      padding: '2rem',
+      padding: '1rem',
     },
     extend: {
       boxShadow: {
         layer: '0 35px 60px -15px rgba(0, 0, 0, 0.3)',
       },
+      keyframes: {
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 2s infinite',
+      },
       colors: {
         black: '#0d0e12',
         white: '#fff',
+        dark: '#111',
+        'green-body': '#adec07',
         cyan: {
           50: '#e7fefe',
           100: '#c5fcfc',
@@ -96,6 +107,17 @@ export default {
       },
       fontFamily: {
         sans: ['var(--font-inter)'],
+      },
+      fontSize: {
+        'xs': '0.75rem',
+        'sm': '0.875rem',
+        'base': '1rem',
+        'lg': '1.125rem',
+        'xl': '1.25rem',
+        '2xl': '1.5rem',
+        '3xl': '1.875rem',
+        '4xl': '2.25rem',
+        '5xl': '3rem',
       },
     },
   },

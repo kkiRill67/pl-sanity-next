@@ -1,0 +1,108 @@
+name: Deploy to VDS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2️⃣ Validate required secrets
+      - name: Validate Secrets
+        run: |
+          if [ -z "${{ secrets.SANITY_API_READ_TOKEN }}" ]; then
+            echo "::error::SANITY_API_READ_TOKEN secret is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}" ]; then
+            echo "::error::NEXT_PUBLIC_SANITY_PROJECT_ID secret is not set"
+            exit 1
+          fi
+          echo "All required secrets are set"
+
+      # 3️⃣ Build Docker image with secrets
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg SANITY_API_READ_TOKEN="${{ secrets.SANITY_API_READ_TOKEN }}" \
+            --build-arg NEXT_PUBLIC_SANITY_PROJECT_ID="${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}" \
+            --build-arg NEXT_PUBLIC_SANITY_DATASET="${{ secrets.NEXT_PUBLIC_SANITY_DATASET }}" \
+            --build-arg NEXT_PUBLIC_SANITY_API_VERSION="${{ secrets.NEXT_PUBLIC_SANITY_API_VERSION }}" \
+            --build-arg NEXT_PUBLIC_SANITY_STUDIO_URL="${{ secrets.NEXT_PUBLIC_SANITY_STUDIO_URL }}" \
+            -t bodymetrics:${{ github.sha }} .
+
+      # 4️⃣ Save Docker image to file
+      - name: Save Docker image
+        run: docker save bodymetrics:${{ github.sha }} | gzip > bodymetrics.tar.gz
+
+      # 5️⃣ Deploy to VDS
+      - name: Deploy to VDS
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          echo "Создание SSH-ключа..."
+          echo "$SSH_KEY" | sed 's/\\n/\n/g' > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+
+           # 2. ТЕСТИРУЕМ ПОДКЛЮЧЕНИЕ
+          echo "Тестируем подключение..."
+          if ! ssh -i /tmp/deploy_key \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=5 \
+              $SSH_USER@$SSH_HOST "echo 'SSH OK'"; then
+            echo "❌ ОШИБКА: Не могу подключиться к серверу"
+            echo "Проверьте:"
+            echo "1. Правильность SSH-ключа в Secrets"
+            echo "2. Публичный ключ добавлен в ~/.ssh/authorized_keys на сервере"
+            echo "3. Права доступа: chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
+            exit 1
+          fi
+
+          # SSH options
+          SSH_OPTIONS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
+
+          # Sync source code to the server
+          rsync -avz --delete -e "ssh $SSH_OPTIONS" . $SSH_USER@$SSH_HOST:$DEPLOY_PATH/ --exclude='.git' --exclude='node_modules'
+
+          # Copy Docker image to server
+          scp $SSH_OPTIONS bodymetrics.tar.gz $SSH_USER@$SSH_HOST:$DEPLOY_PATH/
+
+          # Load and run Docker container on the server
+          ssh $SSH_OPTIONS $SSH_USER@$SSH_HOST << 'EOF'
+            cd $DEPLOY_PATH
+
+            # Load Docker image
+            docker load < bodymetrics.tar.gz
+
+            # Stop and remove old container
+            docker stop bodymetrics || true
+            docker rm bodymetrics || true
+
+            # Run new container
+            docker run -d \
+              --name bodymetrics \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              bodymetrics:${{ github.sha }}
+
+            # Clean up old images
+            docker image prune -af
+
+            # Clean up tar file
+            rm -f bodymetrics.tar.gz
+          EOF
+
+          # Clean up local files
+          rm -f /tmp/deploy_key bodymetrics.tar.gz
+

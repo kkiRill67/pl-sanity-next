@@ -9,6 +9,20 @@ const postFields = /* groq */ `
   "slug": slug.current,
   excerpt,
   coverImage,
+  servings,
+  prepTime,
+  cookTime,
+  difficulty,
+  category,
+  protein,
+  fat,
+  carbs,
+  ingredients[]{
+    name,
+    amount,
+    notes
+  },
+  calories,
   "date": coalesce(date, _updatedAt),
   "author": author->{firstName, lastName, picture},
 `
@@ -76,12 +90,29 @@ export const morePostsQuery = defineQuery(`
 export const postQuery = defineQuery(`
   *[_type == "post" && slug.current == $slug] [0] {
     content[]{
-    ...,
-    markDefs[]{
-      ...,
-      ${linkReference}
-    }
-  },
+      _type,
+      _key,
+      stepNumber,
+      instruction,
+      image{
+        ...,
+        asset->{
+          _id,
+          _type,
+          url,
+          metadata{
+            dimensions{
+              width,
+              height
+            }
+          }
+        }
+      },
+      markDefs[]{
+        ...,
+        ${linkReference}
+      }
+    },
     ${postFields}
   }
 `)

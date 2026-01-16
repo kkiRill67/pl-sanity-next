@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Allow: /food
+
+# Block specific paths
+Disallow: /api/
+Disallow: /studio/
+Disallow: /_next/
+Disallow: /static/
+Disallow: /posts/
+Disallow: /api/draft-mode/
+Disallow: /profile/
+
+# Sitemap location
+Sitemap: https://bodymetrics.ru/sitemap.xml
+
+# Crawl delay (prevents overwhelming the server)
+Crawl-delay: 10
+
+# Specific directives for Googlebot
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 5
