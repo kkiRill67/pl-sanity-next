@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 
 import { AllPosts } from '@/shared/components/Posts'
 import { websiteSchema } from '@/app/structured-data'
+import { CategorySlider } from '@/shared/components/CategorySlider'
 
 export default async function Page() {
   return (
@@ -15,6 +16,7 @@ export default async function Page() {
       {/* <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
         <main className="container"> */}
       <aside>
+        <CategorySlider />
         <Suspense>{await AllPosts()}</Suspense>
       </aside>
       {/* </main>

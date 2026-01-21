@@ -19,7 +19,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Copy all source code
-COPY . .
+COPY frontend ./frontend
+COPY package.json package-lock.json ./
 
 WORKDIR /app/frontend
 # Install frontend dependencies

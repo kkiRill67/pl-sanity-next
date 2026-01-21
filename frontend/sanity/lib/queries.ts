@@ -126,3 +126,27 @@ export const pagesSlugs = defineQuery(`
   *[_type == "page" && defined(slug.current)]
   {"slug": slug.current}
 `)
+
+// Get all unique categories
+export const allCategoriesQuery = defineQuery(`
+  *[_type == "post" && defined(category)]
+  | order(category asc)
+  {category}
+`)
+
+// Get top 10 posts for each category
+export const topPostsByCategoryQuery = defineQuery(`
+  *[_type == "post" && defined(slug.current) && category == $category]
+  | order(calories desc, _updatedAt desc) [0...10] {
+    ${postFields}
+  }
+`)
+
+// Get top 10 posts by categories (returns grouped by category)
+export const topPostsGroupedQuery = defineQuery(`
+  *[_type == "post" && defined(slug.current)]
+  | order(_updatedAt desc) {
+    ${postFields}
+  }
+`)
+

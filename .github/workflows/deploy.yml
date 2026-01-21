@@ -51,58 +51,69 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
+          # дефолт, если секрет не задан или пустой
+          DEPLOY_PATH="${DEPLOY_PATH:-/var/www/bodymetrics}"
+
+          echo "DEPLOY_PATH (runner) = $DEPLOY_PATH"
+
           echo "Создание SSH-ключа..."
           echo "$SSH_KEY" | sed 's/\\n/\n/g' > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
 
-           # 2. ТЕСТИРУЕМ ПОДКЛЮЧЕНИЕ
           echo "Тестируем подключение..."
-          if ! ssh -i /tmp/deploy_key \
-              -o StrictHostKeyChecking=no \
-              -o ConnectTimeout=5 \
-              $SSH_USER@$SSH_HOST "echo 'SSH OK'"; then
-            echo "❌ ОШИБКА: Не могу подключиться к серверу"
-            echo "Проверьте:"
-            echo "1. Правильность SSH-ключа в Secrets"
-            echo "2. Публичный ключ добавлен в ~/.ssh/authorized_keys на сервере"
-            echo "3. Права доступа: chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys"
-            exit 1
-          fi
+          ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
+            "$SSH_USER@$SSH_HOST" "echo 'SSH OK'"
 
-          # SSH options
           SSH_OPTIONS="-i /tmp/deploy_key -o StrictHostKeyChecking=no"
 
-          # Sync source code to the server
-          rsync -avz --delete -e "ssh $SSH_OPTIONS" . $SSH_USER@$SSH_HOST:$DEPLOY_PATH/ --exclude='.git' --exclude='node_modules'
+          echo "Копируем Docker-образ на сервер..."
+          scp $SSH_OPTIONS bodymetrics.tar.gz "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/bodymetrics.tar.gz"
 
-          # Copy Docker image to server
-          scp $SSH_OPTIONS bodymetrics.tar.gz $SSH_USER@$SSH_HOST:$DEPLOY_PATH/
+          echo "Разворачиваем контейнер на сервере..."
+          ssh $SSH_OPTIONS "$SSH_USER@$SSH_HOST" DEPLOY_PATH="$DEPLOY_PATH" 'bash -s' << EOF
+            set -e
 
-          # Load and run Docker container on the server
-          ssh $SSH_OPTIONS $SSH_USER@$SSH_HOST << 'EOF'
-            cd $DEPLOY_PATH
+            echo "DEPLOY_PATH (server) = $DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
 
-            # Load Docker image
+            echo "Содержимое каталога перед docker load:"
+            ls -la
+
+            if [ ! -f bodymetrics.tar.gz ]; then
+              echo "ОШИБКА: bodymetrics.tar.gz не найден в $DEPLOY_PATH"
+              exit 1
+            fi
+
+            echo "Загружаем образ из bodymetrics.tar.gz..."
             docker load < bodymetrics.tar.gz
 
-            # Stop and remove old container
+            echo "Список образов после load:"
+            docker images | head -n 10
+
+            echo "Останавливаем старый контейнер (если есть)..."
             docker stop bodymetrics || true
             docker rm bodymetrics || true
 
-            # Run new container
+            echo "Определяем тег образа..."
+            IMAGE_ID=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'bodymetrics' | head -n1)
+
+            if [ -z "$IMAGE_ID" ]; then
+              echo "ОШИБКА: не удалось найти образ bodymetrics после docker load"
+              exit 1
+            fi
+
+            echo "Используем образ: $IMAGE_ID"
+
+            echo "Запускаем новый контейнер..."
             docker run -d \
               --name bodymetrics \
               --restart unless-stopped \
               -p 3000:3000 \
-              bodymetrics:${{ github.sha }}
+              "$IMAGE_ID"
 
-            # Clean up old images
-            docker image prune -af
-
-            # Clean up tar file
+            echo "Чистим старые образы и архив..."
+            docker image prune -af || true
             rm -f bodymetrics.tar.gz
           EOF
 
-          # Clean up local files
           rm -f /tmp/deploy_key bodymetrics.tar.gz
-

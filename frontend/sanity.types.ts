@@ -775,6 +775,109 @@ export type PostPagesSlugsResult = Array<{
 export type PagesSlugsResult = Array<{
   slug: string;
 }>;
+// Variable: allCategoriesQuery
+// Query: *[_type == "post" && defined(category)]  | order(category asc)  {category}
+export type AllCategoriesQueryResult = Array<never>;
+// Variable: topPostsByCategoryQuery
+// Query: *[_type == "post" && defined(slug.current) && category == $category]  | order(calories desc, _updatedAt desc) [0...10] {      _id,  "status": select(_originalId in path("drafts.**") => "draft", "published"),  "title": coalesce(title, "Untitled"),  "slug": slug.current,  excerpt,  coverImage,  servings,  prepTime,  cookTime,  difficulty,  category,  protein,  fat,  carbs,  ingredients[]{    name,    amount,    notes  },  calories,  "date": coalesce(date, _updatedAt),  "author": author->{firstName, lastName, picture},  }
+export type TopPostsByCategoryQueryResult = Array<{
+  _id: string;
+  status: "draft" | "published";
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  coverImage: {
+    asset?: {
+      _ref: string;
+      _type: "reference";
+      _weak?: boolean;
+      [internalGroqTypeReferenceTo]?: "sanity.imageAsset";
+    };
+    media?: unknown;
+    hotspot?: SanityImageHotspot;
+    crop?: SanityImageCrop;
+    alt?: string;
+    _type: "image";
+  };
+  servings: null;
+  prepTime: null;
+  cookTime: null;
+  difficulty: null;
+  category: null;
+  protein: null;
+  fat: null;
+  carbs: null;
+  ingredients: null;
+  calories: null;
+  date: string;
+  author: {
+    firstName: string;
+    lastName: string;
+    picture: {
+      asset?: {
+        _ref: string;
+        _type: "reference";
+        _weak?: boolean;
+        [internalGroqTypeReferenceTo]?: "sanity.imageAsset";
+      };
+      media?: unknown;
+      hotspot?: SanityImageHotspot;
+      crop?: SanityImageCrop;
+      alt?: string;
+      _type: "image";
+    };
+  } | null;
+}>;
+// Variable: topPostsGroupedQuery
+// Query: *[_type == "post" && defined(slug.current)]  | order(_updatedAt desc) {      _id,  "status": select(_originalId in path("drafts.**") => "draft", "published"),  "title": coalesce(title, "Untitled"),  "slug": slug.current,  excerpt,  coverImage,  servings,  prepTime,  cookTime,  difficulty,  category,  protein,  fat,  carbs,  ingredients[]{    name,    amount,    notes  },  calories,  "date": coalesce(date, _updatedAt),  "author": author->{firstName, lastName, picture},  }
+export type TopPostsGroupedQueryResult = Array<{
+  _id: string;
+  status: "draft" | "published";
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  coverImage: {
+    asset?: {
+      _ref: string;
+      _type: "reference";
+      _weak?: boolean;
+      [internalGroqTypeReferenceTo]?: "sanity.imageAsset";
+    };
+    media?: unknown;
+    hotspot?: SanityImageHotspot;
+    crop?: SanityImageCrop;
+    alt?: string;
+    _type: "image";
+  };
+  servings: null;
+  prepTime: null;
+  cookTime: null;
+  difficulty: null;
+  category: null;
+  protein: null;
+  fat: null;
+  carbs: null;
+  ingredients: null;
+  calories: null;
+  date: string;
+  author: {
+    firstName: string;
+    lastName: string;
+    picture: {
+      asset?: {
+        _ref: string;
+        _type: "reference";
+        _weak?: boolean;
+        [internalGroqTypeReferenceTo]?: "sanity.imageAsset";
+      };
+      media?: unknown;
+      hotspot?: SanityImageHotspot;
+      crop?: SanityImageCrop;
+      alt?: string;
+      _type: "image";
+    };
+  } | null;
+}>;
 
 // Query TypeMap
 import "@sanity/client";
@@ -788,5 +891,8 @@ declare module "@sanity/client" {
     "\n  *[_type == \"post\" && slug.current == $slug] [0] {\n    content[]{\n      _type,\n      _key,\n      stepNumber,\n      instruction,\n      image{\n        ...,\n        asset->{\n          _id,\n          _type,\n          url,\n          metadata{\n            dimensions{\n              width,\n              height\n            }\n          }\n        }\n      },\n      markDefs[]{\n        ...,\n        \n  _type == \"link\" => {\n    \"page\": page->slug.current,\n    \"post\": post->slug.current\n  }\n\n      }\n    },\n    \n  _id,\n  \"status\": select(_originalId in path(\"drafts.**\") => \"draft\", \"published\"),\n  \"title\": coalesce(title, \"Untitled\"),\n  \"slug\": slug.current,\n  excerpt,\n  coverImage,\n  servings,\n  prepTime,\n  cookTime,\n  difficulty,\n  category,\n  protein,\n  fat,\n  carbs,\n  ingredients[]{\n    name,\n    amount,\n    notes\n  },\n  calories,\n  \"date\": coalesce(date, _updatedAt),\n  \"author\": author->{firstName, lastName, picture},\n\n  }\n": PostQueryResult;
     "\n  *[_type == \"post\" && defined(slug.current)]\n  {\"slug\": slug.current}\n": PostPagesSlugsResult;
     "\n  *[_type == \"page\" && defined(slug.current)]\n  {\"slug\": slug.current}\n": PagesSlugsResult;
+    "\n  *[_type == \"post\" && defined(category)]\n  | order(category asc)\n  {category}\n": AllCategoriesQueryResult;
+    "\n  *[_type == \"post\" && defined(slug.current) && category == $category]\n  | order(calories desc, _updatedAt desc) [0...10] {\n    \n  _id,\n  \"status\": select(_originalId in path(\"drafts.**\") => \"draft\", \"published\"),\n  \"title\": coalesce(title, \"Untitled\"),\n  \"slug\": slug.current,\n  excerpt,\n  coverImage,\n  servings,\n  prepTime,\n  cookTime,\n  difficulty,\n  category,\n  protein,\n  fat,\n  carbs,\n  ingredients[]{\n    name,\n    amount,\n    notes\n  },\n  calories,\n  \"date\": coalesce(date, _updatedAt),\n  \"author\": author->{firstName, lastName, picture},\n\n  }\n": TopPostsByCategoryQueryResult;
+    "\n  *[_type == \"post\" && defined(slug.current)]\n  | order(_updatedAt desc) {\n    \n  _id,\n  \"status\": select(_originalId in path(\"drafts.**\") => \"draft\", \"published\"),\n  \"title\": coalesce(title, \"Untitled\"),\n  \"slug\": slug.current,\n  excerpt,\n  coverImage,\n  servings,\n  prepTime,\n  cookTime,\n  difficulty,\n  category,\n  protein,\n  fat,\n  carbs,\n  ingredients[]{\n    name,\n    amount,\n    notes\n  },\n  calories,\n  \"date\": coalesce(date, _updatedAt),\n  \"author\": author->{firstName, lastName, picture},\n\n  }\n": TopPostsGroupedQueryResult;
   }
 }
