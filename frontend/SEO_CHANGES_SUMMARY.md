@@ -215,7 +215,7 @@
 ### Local Testing
 ```bash
 npm run dev
-# Check: http://localhost:3000
+# Check: https://bodymetrics.ru
 # View source to verify meta tags
 ```
 
@@ -244,7 +244,7 @@ NEXT_PUBLIC_SITE_URL=https://bodymetrics.ru
 
 ### Development (Optional)
 ```env
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=https://bodymetrics.ru
 ```
 
 ---

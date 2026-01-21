@@ -195,7 +195,7 @@ NEXT_PUBLIC_SITE_URL=https://bodymetrics.ru
 NEXT_PUBLIC_SITE_URL=https://staging.bodymetrics.ru
 
 # For local development
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=https://bodymetrics.ru
 ```
 
 ## Search Engine Verification

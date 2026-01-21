@@ -1,4 +1,4 @@
-# Docker Deployment Fix Summary
+# Docker Deployment Fix Summary (Frontend Only)
 
 ## Problem Fixed
 

@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Push Docker Image (Frontend Only)
 
 on:
   push:
@@ -70,6 +70,7 @@ jobs:
       - name: Build summary
         if: github.event_name != 'pull_request'
         run: |
-          echo "## Docker Image Built" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Image Built (Frontend Only)" >> $GITHUB_STEP_SUMMARY
           echo "- Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "- Tags: ${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+

@@ -1,4 +1,4 @@
-name: Test Docker Build
+name: Test Docker Build (Frontend Only)
 
 on:
   pull_request:
@@ -43,4 +43,4 @@ jobs:
       - name: Verify build
         run: |
           docker images | grep test-app
-          echo "✅ Docker build test passed"
+          echo "✅ Docker build test passed (Frontend Only)"
