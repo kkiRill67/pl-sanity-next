@@ -5,6 +5,8 @@ version: "3.8"
 services:
   app:
     build:
+      context: .
+      dockerfile: Dockerfile
       target: builder  # Use builder stage for development (includes dev dependencies)
     volumes:
       - ./frontend:/app/frontend
@@ -12,6 +14,33 @@ services:
       - /app/frontend/.next
     environment:
       - NODE_ENV=development
-      - NEXT_TELEMETRY_DISABLED=1
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
     command: npm run dev
+    restart: unless-stopped
+    profiles:
+      - dev
+
+  prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_TELEMETRY_DISABLED: ${NEXT_TELEMETRY_DISABLED:-1}
+        NEXT_PUBLIC_SANITY_PROJECT_ID: ${NEXT_PUBLIC_SANITY_PROJECT_ID}
+        NEXT_PUBLIC_SANITY_DATASET: ${NEXT_PUBLIC_SANITY_DATASET}
+        NEXT_PUBLIC_SANITY_API_VERSION: ${NEXT_PUBLIC_SANITY_API_VERSION}
+        NEXT_PUBLIC_SANITY_STUDIO_URL: ${NEXT_PUBLIC_SANITY_STUDIO_URL}
+        SANITY_API_READ_TOKEN: ${SANITY_API_READ_TOKEN}
+    environment:
+      - NEXT_TELEMETRY_DISABLED=${NEXT_TELEMETRY_DISABLED:-1}
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
+    profiles:
+      - prod
+    command: npm run build && npm start  # Исправлено: для prod билд + запуск production сервера
     restart: unless-stopped

@@ -70,7 +70,7 @@ jobs:
           scp $SSH_OPTIONS bodymetrics.tar.gz "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/bodymetrics.tar.gz"
 
           echo "Разворачиваем контейнер на сервере..."
-          ssh $SSH_OPTIONS "$SSH_USER@$SSH_HOST" DEPLOY_PATH="$DEPLOY_PATH" 'bash -s' << EOF
+          ssh $SSH_OPTIONS "$SSH_USER@$SSH_HOST" DEPLOY_PATH="$DEPLOY_PATH" 'bash -s' << 'EOF'
             set -e
 
             echo "DEPLOY_PATH (server) = $DEPLOY_PATH"
@@ -90,26 +90,58 @@ jobs:
             echo "Список образов после load:"
             docker images | head -n 10
 
-            echo "Останавливаем старый контейнер (если есть)..."
-            docker stop bodymetrics || true
-            docker rm bodymetrics || true
-
             echo "Определяем тег образа..."
-            IMAGE_ID=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep 'bodymetrics' | head -n1)
+            IMAGE_TAG=$(docker images bodymetrics --format '{{.Repository}}:{{.Tag}}' | head -n 1)
 
-            if [ -z "$IMAGE_ID" ]; then
+            if [ -z "$IMAGE_TAG" ]; then
               echo "ОШИБКА: не удалось найти образ bodymetrics после docker load"
+              docker images | head -n 50
               exit 1
             fi
 
-            echo "Используем образ: $IMAGE_ID"
+            echo "Используем образ: $IMAGE_TAG"
 
-            echo "Запускаем новый контейнер..."
+            echo "Пробуем запустить новый контейнер bodymetrics_new на 3001..."
+            docker rm -f bodymetrics_new || true
+            docker run -d \
+              --name bodymetrics_new \
+              --restart unless-stopped \
+              -p 3001:3000 \
+              "$IMAGE_TAG"
+
+            echo "Ждём 10 секунд и проверяем, что новый контейнер жив..."
+            sleep 10
+
+            if ! docker ps --format '{{.Names}}' | grep -q '^bodymetrics_new$'; then
+              echo "ОШИБКА: новый контейнер bodymetrics_new не запустился, откатываемся"
+              docker logs bodymetrics_new || true
+              docker rm -f bodymetrics_new || true
+              exit 1
+            fi
+
+            echo "Проверяем HTTP-ответ нового контейнера..."
+            if ! curl -fsS http://127.0.0.1:3001 >/dev/null 2>&1; then
+              echo "ОШИБКА: новый контейнер bodymetrics_new не отвечает по HTTP, откатываемся"
+              docker logs bodymetrics_new || true
+              docker rm -f bodymetrics_new || true
+              exit 1
+            fi
+
+            echo "Новый контейнер работает, переключаем трафик..."
+
+            echo "Останавливаем и удаляем старый контейнер bodymetrics (если есть)..."
+            docker stop bodymetrics || true
+            docker rm bodymetrics || true
+
+            echo "Запускаем новый контейнер как bodymetrics на 3000..."
             docker run -d \
               --name bodymetrics \
               --restart unless-stopped \
               -p 3000:3000 \
-              "$IMAGE_ID"
+              "$IMAGE_TAG"
+
+            echo "Удаляем временный контейнер bodymetrics_new..."
+            docker rm -f bodymetrics_new || true
 
             echo "Чистим старые образы и архив..."
             docker image prune -af || true

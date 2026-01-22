@@ -8,7 +8,7 @@ Dockerfile
 .env
 .env.example
 .env.local
-frontend/.next
+frontend/.next/cache
 frontend/.vercel
 frontend/.cache
 frontend/.eslintcache

@@ -1,12 +1,16 @@
+'use client'
+
 import Link from 'next/link'
-import { sanityFetch } from '@/sanity/lib/live'
-import { topPostsGroupedQuery } from '@/sanity/lib/queries'
+import { getImageDimensions } from '@sanity/asset-utils'
+
 import { CardWrapper } from '@/shared/ui/card'
+import { urlForImage } from '@/sanity/lib/utils'
+import Image from 'next/image'
 
 interface Post {
   _id: string
   title: string
-  slug?: { current: string }
+  slug?: string
   coverImage?: any
   imageUrl?: string
   category?: string
@@ -17,42 +21,38 @@ interface Post {
   calories?: number
 }
 
-// Функция для группировки по категориям и сортировки по калориям
-const groupByCategory = (posts: Post[]): Record<string, Post[]> => {
-  const groups: Record<string, Post[]> = {}
-
-  posts.forEach((post) => {
-    if (post.category) {
-      if (!groups[post.category]) {
-        groups[post.category] = []
-      }
-      groups[post.category].push(post)
-    }
-  })
-
-  // Сортируем по калориям (по убыванию) и берем топ 10
-  Object.keys(groups).forEach((category) => {
-    groups[category] = groups[category]
-      .sort((a, b) => (b.calories || 0) - (a.calories || 0))
-      .slice(0, 10)
-  })
-
-  return groups
+interface CategorySliderProps {
+  posts: Post[]
 }
 
 const PostCard = ({ post }: { post: Post }) => {
-  const imageUrl = post.coverImage?.asset?.url || post.imageUrl || '/placeholder-image.jpg'
-  const slug = post.slug?.current
+  const { title, slug, coverImage, calories } = post
+  const imageUrl = coverImage?.asset?._ref ? urlForImage(coverImage as any)?.url() : post.imageUrl || null
+  const imageDimensions = coverImage?.asset?._ref ? getImageDimensions(coverImage as any) : null
 
   return (
     <Link href={`/food/${slug}`}>
       <CardWrapper
         header={
-          <img
-            src={imageUrl}
-            alt={post.title}
-            className="w-full h-40 object-cover rounded-t-lg"
-          />
+          imageUrl && imageDimensions ? (
+            <Image
+              src={imageUrl}
+              alt={coverImage?.alt || title || ''}
+              width={imageDimensions.width}
+              height={imageDimensions.height}
+              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+            />
+          ) : post.imageUrl ? (
+            <img
+              src={post.imageUrl}
+              alt={title || ''}
+              className="object-cover w-full h-full"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+              <div className="text-gray-500 text-4xl">🍽️</div>
+            </div>
+          )
         }
         className="min-w-[280px]"
       >
@@ -64,9 +64,9 @@ const PostCard = ({ post }: { post: Post }) => {
                 {post.category}
               </span>
             )}
-            {post.calories && (
+            {calories && (
               <span className="bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">
-                {post.calories} ккал
+                {calories} ккал
               </span>
             )}
             {post.difficulty && (
@@ -109,14 +109,35 @@ const CategorySection = ({ category, posts }: { category: string; posts: Post[] 
   )
 }
 
-export async function CategorySlider() {
-  const { data } = await sanityFetch({ query: topPostsGroupedQuery })
+// Функция для группировки по категориям и сортировки по калориям
+const groupByCategory = (posts: Post[]): Record<string, Post[]> => {
+  const groups: Record<string, Post[]> = {}
 
-  if (!data || data.length === 0) {
+  posts.forEach((post) => {
+    if (post.category) {
+      if (!groups[post.category]) {
+        groups[post.category] = []
+      }
+      groups[post.category].push(post)
+    }
+  })
+
+  // Сортируем по калориям (по убыванию) и берем топ 10
+  Object.keys(groups).forEach((category) => {
+    groups[category] = groups[category]
+      .sort((a, b) => (b.calories || 0) - (a.calories || 0))
+      .slice(0, 10)
+  })
+
+  return groups
+}
+
+export function CategorySlider({ posts }: CategorySliderProps) {
+  if (!posts || posts.length === 0) {
     return null
   }
 
-  const groupedPosts = groupByCategory(data)
+  const groupedPosts = groupByCategory(posts)
 
   // Сортируем категории по количеству блюд
   const sortedCategories = Object.entries(groupedPosts)
